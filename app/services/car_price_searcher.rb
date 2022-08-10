@@ -6,8 +6,16 @@ class CarPriceSearcher
     def call
       options = Selenium::WebDriver::Chrome::Options.new
       options.binary = ENV.fetch("GOOGLE_CHROME_SHIM") if Rails.env.production?
+      # コマンドラインからchromeを開く。GUIよりこっちの方が軽い
       options.add_argument('--headless')
+      # 「暫定的なフラグ」らしい
       options.add_argument('--disable-gpu')
+      # セキュリティ対策などのchromeに搭載してある保護機能をオフにする
+      options.add_argument('--no-sandbox')
+      # ディスクのメモリスペースを使う
+      options.add_argument('--disable-dev-shm-usage')
+      # リモートデバッグフラグを立てる
+      options.add_argument('--remote-debugging-port=9222')
       session = Selenium::WebDriver.for :chrome, options: options
       # 10秒待っても読み込まれない場合は例外起こす
       session.manage.timeouts.implicit_wait = 10
