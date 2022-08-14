@@ -26,6 +26,7 @@ class CarPriceSearcher
 
     url = get_url
     session.navigate.to(url)
+    sleep(5)
     car_lists = session.find_elements(:class, 'plan_contents_list')
 
     search_results = []
@@ -35,17 +36,31 @@ class CarPriceSearcher
       search_results << contents
     end
 
-    if search_results.present?
-      puts search_results
-    else
-      puts 'no results...'
+    unless search_results.present?
+      raise StandardError, "no results ... #{url}"
     end
 
-    sleep(2)
-    session.quit # ブラウザ終了
+    # formatted_prices be like ["¥30,000(税込)","¥50,600(税込)"]
+    formatted_prices = search_results.map{|res| res[:price]}
+    prices = remove_format(formatted_prices)
+
+    average_price = calc_average_price(prices)
+    cheapest_price = get_cheapest_price(prices)
+    highest_price = get_highest_price(prices)
+
+    data = {
+      search_results: search_results,
+      average_price: average_price,
+      cheapest_price: cheapest_price,
+      highest_price: highest_price
+    }
+
+    session.quit
+    ServiceResult.new success: true, data: data
   rescue => e
     session.quit
     puts e
+    ServiceResult.new success: false, errors: e
   end
 
   private
@@ -81,8 +96,8 @@ class CarPriceSearcher
       "&return_airport_id=0" \
       "&checkbox=1" \
       "&place=3" \
-      "&return_way=" \
-      "0&year=#{start_year}" \
+      "&return_way=0" \
+      "&year=#{start_year}" \
       "&month=#{start_month}" \
       "&day=#{start_day}" \
       "&return_year=#{return_year}" \
@@ -132,5 +147,29 @@ class CarPriceSearcher
       price_title: price_title,
       price: price
     }
+  end
+
+  def remove_format formatted_prices
+    # ["¥30,000(税込)","¥50,600(税込)"]
+    # ↓ to be
+    # [30000, 50600]
+    unformatted_prices = []
+    formatted_prices.each do |formatted_price|
+      unformatted_prices << formatted_price.delete("^0-9").to_i
+    end
+
+    unformatted_prices
+  end
+
+  def calc_average_price prices
+    prices.sum / prices.length
+  end
+
+  def get_cheapest_price prices
+    prices.min
+  end
+
+  def get_highest_price price
+    price.max
   end
 end
