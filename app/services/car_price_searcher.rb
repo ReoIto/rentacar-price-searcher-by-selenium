@@ -1,3 +1,4 @@
+# CarPriceSearcher.call(2022, 8, 20, '11-00', 2022, 8, 23, '17-00')
 class CarPriceSearcher
   include BaseService
   require 'selenium-webdriver'
@@ -26,7 +27,7 @@ class CarPriceSearcher
 
     url = get_url
     session.navigate.to(url)
-    sleep(5)
+    sleep(3)
     car_lists = session.find_elements(:class, 'plan_contents_list')
 
     search_results = []
