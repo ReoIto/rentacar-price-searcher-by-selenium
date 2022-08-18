@@ -50,7 +50,7 @@ class CarPriceSearcher
     highest_price = get_highest_price(prices)
 
     data = {
-      search_results: search_results,
+      car_list: search_results,
       average_price: average_price,
       cheapest_price: cheapest_price,
       highest_price: highest_price
