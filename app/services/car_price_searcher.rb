@@ -98,7 +98,9 @@ class CarPriceSearcher
       "&return_year=#{return_datetime.year}" \
       "&return_month=#{return_datetime.month}" \
       "&return_day=#{return_datetime.day}" \
-      "&area_type=0"
+      "&area_type=0" \
+      "&car_type[0]=9" \
+      "&car_type[1]=5"
   end
 
   def pluck_contents car_info
