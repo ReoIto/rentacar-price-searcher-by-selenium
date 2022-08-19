@@ -4,18 +4,11 @@ class CarPriceSearcher
   require 'selenium-webdriver'
   require 'webdrivers'
 
-  def initialize start_year, start_month, start_day, start_time,
-    return_year, return_month, return_day, return_time
-
-    @start_year = start_year
-    @start_month = start_month
-    @start_day = start_day
-    @start_time = start_time
-
-    @return_year = return_year
-    @return_month = return_month
-    @return_day = return_day
-    @return_time = return_time
+  def initialize search_params
+    @start_date = search_params[:start_date]
+    @start_time = search_params[:start_time]
+    @return_date = search_params[:return_date]
+    @return_time = search_params[:return_time]
 
     @selenium_options = set_selenium_options
   end
@@ -65,8 +58,7 @@ class CarPriceSearcher
   end
 
   private
-  attr_reader :selenium_options, :start_year, :start_month, :start_day,
-    :start_time, :return_year, :return_month, :return_day, :return_time
+  attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time
 
   def set_selenium_options
     options = Selenium::WebDriver::Chrome::Options.new
@@ -86,24 +78,26 @@ class CarPriceSearcher
   end
 
   def get_url
+    start_datetime = Time.parse("#{start_date} #{start_time}")
+    return_datetime = Time.parse("#{return_date} #{return_time}")
     "https://skyticket.jp/rentacar/okinawa/naha_airport/" \
-      "?time=#{start_time}" \
+      "?time=#{start_datetime.hour}-#{start_datetime.min.zero? ? '00' : start_datetime.min}" \
       "&prefecture=47" \
       "&area_id=271" \
       "&airport_id=326" \
       "&station_id=9200" \
-      "&return_time=#{return_time}" \
+      "&return_time=#{return_datetime.hour}-#{return_datetime.min.zero? ? '00' : return_datetime.min}" \
       "&return_prefecture=0" \
       "&return_airport_id=0" \
       "&checkbox=1" \
       "&place=3" \
       "&return_way=0" \
-      "&year=#{start_year}" \
-      "&month=#{start_month}" \
-      "&day=#{start_day}" \
-      "&return_year=#{return_year}" \
-      "&return_month=#{return_month}" \
-      "&return_day=#{return_day}" \
+      "&year=#{start_datetime.year}" \
+      "&month=#{start_datetime.month}" \
+      "&day=#{start_datetime.day}" \
+      "&return_year=#{return_datetime.year}" \
+      "&return_month=#{return_datetime.month}" \
+      "&return_day=#{return_datetime.day}" \
       "&area_type=0"
   end
 
