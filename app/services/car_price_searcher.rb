@@ -1,4 +1,3 @@
-# CarPriceSearcher.call(2022, 8, 20, '11-00', 2022, 8, 23, '17-00')
 class CarPriceSearcher
   include BaseService
   require 'selenium-webdriver'
