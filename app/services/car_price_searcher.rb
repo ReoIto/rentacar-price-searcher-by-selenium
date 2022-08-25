@@ -1,5 +1,6 @@
 class CarPriceSearcher
   include BaseService
+  include PriceCalculator
   require 'selenium-webdriver'
   require 'webdrivers'
 
@@ -37,15 +38,19 @@ class CarPriceSearcher
     formatted_prices = search_results.map{|res| res[:price]}
     prices = remove_format(formatted_prices)
 
-    average_price = calc_average_price(prices)
-    cheapest_price = get_cheapest_price(prices)
-    highest_price = get_highest_price(prices)
+    average_price = average_price(prices)
+    cheapest_price = cheapest_price(prices)
+    highest_price = highest_price(prices)
+    average_price_between_average_and_cheapest =
+      average_price([average_price, cheapest_price])
 
     data = {
       car_list: search_results,
       average_price: average_price,
       cheapest_price: cheapest_price,
-      highest_price: highest_price
+      highest_price: highest_price,
+      average_price_between_average_and_cheapest:
+        average_price_between_average_and_cheapest
     }
 
     session.quit
@@ -155,17 +160,5 @@ class CarPriceSearcher
     end
 
     unformatted_prices
-  end
-
-  def calc_average_price prices
-    prices.sum / prices.length
-  end
-
-  def get_cheapest_price prices
-    prices.min
-  end
-
-  def get_highest_price price
-    price.max
   end
 end
