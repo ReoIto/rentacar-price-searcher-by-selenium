@@ -8,6 +8,6 @@ module PriceCalculator
   end
 
   def highest_price prices
-    price.max
+    prices.max
   end
 end
