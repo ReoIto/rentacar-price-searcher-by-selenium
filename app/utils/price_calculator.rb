@@ -7,7 +7,7 @@ module PriceCalculator
     prices.min
   end
 
-  def highest_price price
+  def highest_price prices
     price.max
   end
 end
