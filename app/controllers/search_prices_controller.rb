@@ -5,7 +5,11 @@ class SearchPricesController < ApplicationController
     if result.success?
       render json: {search_result: result.data}, status: :ok
     else
-      render json: {search_result: 'Sorry. There is no results.'}, status: :internal_server_error
+      render json: {
+        search_result: {
+          is_error: true
+        }
+      }, status: :internal_server_error
     end
   end
 
