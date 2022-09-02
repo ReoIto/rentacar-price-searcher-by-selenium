@@ -1,6 +1,7 @@
 class SearchPricesController < ApplicationController
   def search
     result = CarPriceSearcher.call search_params
+
     if result.success?
       render json: {search_result: result.data}, status: :ok
     else

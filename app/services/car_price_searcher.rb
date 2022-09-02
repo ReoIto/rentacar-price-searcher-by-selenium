@@ -30,33 +30,35 @@ class CarPriceSearcher
       search_results << contents
     end
 
-    unless search_results.present?
-      raise StandardError, "no results ... #{url}"
+    if search_results.empty?
+      data = {
+        is_no_result: true
+      }
+    else
+      # formatted_prices be like ["¥30,000(税込)","¥50,600(税込)"]
+      formatted_prices = search_results.map{|res| res[:price]}
+      prices = remove_format(formatted_prices)
+
+      average_price = average_price(prices)
+      cheapest_price = cheapest_price(prices)
+      highest_price = highest_price(prices)
+      average_price_between_average_and_cheapest =
+        average_price([average_price, cheapest_price])
+
+      data = {
+        car_list: search_results,
+        average_price: average_price,
+        cheapest_price: cheapest_price,
+        highest_price: highest_price,
+        average_price_between_average_and_cheapest:
+          average_price_between_average_and_cheapest
+      }
     end
 
-    # formatted_prices be like ["¥30,000(税込)","¥50,600(税込)"]
-    formatted_prices = search_results.map{|res| res[:price]}
-    prices = remove_format(formatted_prices)
-
-    average_price = average_price(prices)
-    cheapest_price = cheapest_price(prices)
-    highest_price = highest_price(prices)
-    average_price_between_average_and_cheapest =
-      average_price([average_price, cheapest_price])
-
-    data = {
-      car_list: search_results,
-      average_price: average_price,
-      cheapest_price: cheapest_price,
-      highest_price: highest_price,
-      average_price_between_average_and_cheapest:
-        average_price_between_average_and_cheapest
-    }
-
-    session.quit
+    session.quit if session
     ServiceResult.new success: true, data: data
   rescue => e
-    session.quit
+    session.quit if session
     puts e
     ServiceResult.new success: false, errors: e
   end
