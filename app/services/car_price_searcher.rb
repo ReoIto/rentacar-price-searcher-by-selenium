@@ -51,7 +51,8 @@ class CarPriceSearcher
         cheapest_price: cheapest_price,
         highest_price: highest_price,
         average_price_between_average_and_cheapest:
-          average_price_between_average_and_cheapest
+          average_price_between_average_and_cheapest,
+        is_error: false
       }
     end
 
@@ -59,7 +60,11 @@ class CarPriceSearcher
     ServiceResult.new success: true, data: data
   rescue => e
     session.quit if session
-    puts e
+    Utility.log_exception e,
+      info: "Called CarPriceSearcher.call with\n" \
+        "- start_date: #{start_date}, - start_time: #{start_time} " \
+        "- return_date: #{return_date}, - return_time: #{return_time}\n" \
+        "- selenium_options: #{selenium_options.options}"
     ServiceResult.new success: false, errors: e
   end
 
