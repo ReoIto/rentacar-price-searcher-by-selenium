@@ -94,14 +94,16 @@ class CarPriceSearcher
     # ?time=9-00だとエラーになるため、?time=09-00になるように加工する
     start_hour = start_datetime.hour.to_s.length == 1 ? "0#{start_datetime.hour}" : start_datetime.hour
     return_hour = return_datetime.hour.to_s.length == 1 ? "0#{return_datetime.hour}" : return_datetime.hour
+    start_min = start_datetime.min.zero? ? '00' : start_datetime.min
+    return_min = return_datetime.min.zero? ? '00' : return_datetime.min
 
     "https://skyticket.jp/rentacar/okinawa/naha_airport/" \
-      "?time=#{start_hour}-#{start_datetime.min.zero? ? '00' : start_datetime.min}" \
+      "?time=#{start_hour}-#{start_min}" \
       "&prefecture=47" \
       "&area_id=271" \
       "&airport_id=326" \
       "&station_id=9200" \
-      "&return_time=#{return_hour}-#{return_datetime.min.zero? ? '00' : return_datetime.min}" \
+      "&return_time=#{return_hour}-#{return_min}" \
       "&return_prefecture=0" \
       "&return_airport_id=0" \
       "&checkbox=1" \
