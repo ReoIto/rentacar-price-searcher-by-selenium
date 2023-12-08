@@ -33,7 +33,6 @@ class CarPriceSearcher < ::Base
     car_contents = session.find_elements(:class, 'plan_info_block')
 
     search_results = []
-    binding.pry
     car_contents.each { |content| search_results << extract_contents(content) }
 
     return ServiceResult.new success: true, data: { is_no_result: true } unless search_results.present?

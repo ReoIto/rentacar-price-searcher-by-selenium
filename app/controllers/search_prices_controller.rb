@@ -1,5 +1,5 @@
 class SearchPricesController < ApplicationController
-  def search
+  def index
     result = CarPriceSearcher.execute(search_params[:start_date], search_params[:start_time], search_params[:return_date], search_params[:return_time])
 
     if result.success?
