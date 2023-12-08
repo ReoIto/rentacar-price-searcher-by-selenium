@@ -21,8 +21,7 @@ class CarPriceSearcher
     url = get_url
     session.navigate.to(url)
     sleep(3)
-    car_lists = session.find_elements(:class, 'plan_contents_list')
-
+    car_lists = session.find_elements(:class, 'plan_info_block')
     search_results = []
     car_lists.each do |car_info|
       contents = pluck_contents(car_info)
@@ -72,6 +71,7 @@ class CarPriceSearcher
   attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time
 
   def set_selenium_options
+    # Webdrivers::Chromedriver.required_version = '106.0.5249.21' if Rails.env.development?
     options = Selenium::WebDriver::Chrome::Options.new
     options.binary = ENV.fetch("GOOGLE_CHROME_SHIM") if Rails.env.production?
     # コマンドラインからchromeを開く。GUIよりこっちの方が軽い
@@ -121,38 +121,11 @@ class CarPriceSearcher
   end
 
   def pluck_contents car_info
-    shop_name =
-      car_info
-        .find_element(:class, 'plan_contents_list_head')
-        .find_element(:class, 'plan_contents_list_head_top')
-        .find_element(:class, 'plan_contents_list_shop_name')
-        .text
-
-    car_name =
-      car_info
-        .find_element(:class, 'plan_contents_list_body')
-        .find_element(:class, 'plan_contents_name')
-        .text
-
-    limit_of_passengers =
-      car_info
-        .find_element(:class, 'plan_contents_list_body')
-        .find_elements(:class, 'plan_car_spec')[1]
-        .text
-
-    price_title =
-      car_info
-        .find_element(:class, 'plan_contents_list_body')
-        .find_element(:class, 'plan_contents_list_right')
-        .find_element(:class, 'plan_contents_price_title')
-        .text
-
-    price =
-      car_info
-        .find_element(:class, 'plan_contents_list_body')
-        .find_element(:class, 'plan_contents_list_right')
-        .find_element(:class, 'plan_contents_price')
-        .text
+    shop_name = car_info.find_element(:class, 'plan_info_block_shop_name').text
+    car_name = car_info.find_element(:class, 'plan_contents_name_wrap').text
+    limit_of_passengers = car_info.find_elements(:class, 'plan_car_spec')[1].text
+    price_title = car_info.find_element(:class, 'plan_contents_price_title').text
+    price = car_info.find_element(:class, 'plan_contents_price').text
 
     {
       shop_name: shop_name,
