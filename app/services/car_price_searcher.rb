@@ -1,19 +1,29 @@
-class CarPriceSearcher
-  include BaseService
-  include PriceCalculator
+class CarPriceSearcher < ::Base
+  include PriceCalculatable
   require 'selenium-webdriver'
   require 'webdrivers'
 
-  def initialize search_params
-    @start_date = search_params[:start_date]
-    @start_time = search_params[:start_time]
-    @return_date = search_params[:return_date]
-    @return_time = search_params[:return_time]
+  # @params [String] start_date
+  # @params [String] start_time
+  # @params [String] return_date
+  # @params [String] return_time
+  # @return [::ServiceResult]
+  def self.execute(start_date, start_time, return_date, return_time)
+    new(start_date, start_time, return_date, return_time).search
+  end
 
+  private_class_method :new
+  attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time
+
+  def initialize(start_date, start_time, return_date, return_time)
+    @start_date = start_date
+    @start_time = start_time
+    @return_date = return_date
+    @return_time = return_time
     @selenium_options = set_selenium_options
   end
 
-  def call
+  def search
     session = Selenium::WebDriver.for :chrome, options: selenium_options
     # 10秒待っても読み込まれない場合は例外起こす
     session.manage.timeouts.implicit_wait = 10
@@ -59,16 +69,17 @@ class CarPriceSearcher
     ServiceResult.new success: true, data: data
   rescue => e
     session.quit if session
-    Utility.log_exception e,
+    output_error(
+      e,
       info: "Called CarPriceSearcher.call with\n" \
-        "- start_date: #{start_date}, - start_time: #{start_time} " \
-        "- return_date: #{return_date}, - return_time: #{return_time}\n" \
-        "- selenium_options: #{selenium_options.options}"
+            "- start_date: #{start_date}, - start_time: #{start_time} " \
+            "- return_date: #{return_date}, - return_time: #{return_time}\n" \
+            "- selenium_options: #{selenium_options.options}"
+    )
     ServiceResult.new success: false, errors: e
   end
 
   private
-  attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time
 
   def set_selenium_options
     # Webdrivers::Chromedriver.required_version = '106.0.5249.21' if Rails.env.development?
@@ -140,11 +151,8 @@ class CarPriceSearcher
     # ["¥30,000(税込)","¥50,600(税込)"]
     # ↓ to be
     # [30000, 50600]
-    unformatted_prices = []
-    formatted_prices.each do |formatted_price|
-      unformatted_prices << formatted_price.delete("^0-9").to_i
+    formatted_prices.map do |formatted_price|
+      formatted_price.delete("^0-9").to_i
     end
-
-    unformatted_prices
   end
 end
