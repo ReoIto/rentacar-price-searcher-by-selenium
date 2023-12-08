@@ -65,10 +65,8 @@ class CarPriceSearcher < ::Base
       }
     end
 
-    session.quit if session
     ServiceResult.new success: true, data: data
   rescue => e
-    session.quit if session
     output_error(
       e,
       info: "Called CarPriceSearcher.call with\n" \
@@ -77,6 +75,8 @@ class CarPriceSearcher < ::Base
             "- selenium_options: #{selenium_options.options}"
     )
     ServiceResult.new success: false, errors: e
+  ensure
+    session.quit if session
   end
 
   private
