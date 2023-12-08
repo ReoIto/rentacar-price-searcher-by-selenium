@@ -1,74 +1,74 @@
-class CarPriceSearcher
-  include BaseService
-  include PriceCalculator
+class CarPriceSearcher < ::Base
+  include PriceCalculatable
   require 'selenium-webdriver'
   require 'webdrivers'
 
-  def initialize search_params
-    @start_date = search_params[:start_date]
-    @start_time = search_params[:start_time]
-    @return_date = search_params[:return_date]
-    @return_time = search_params[:return_time]
-
-    @selenium_options = set_selenium_options
+  # @params [String] start_date
+  # @params [String] start_time
+  # @params [String] return_date
+  # @params [String] return_time
+  # @return [::ServiceResult]
+  def self.execute(start_date, start_time, return_date, return_time)
+    new(start_date, start_time, return_date, return_time).search
   end
 
-  def call
-    session = Selenium::WebDriver.for :chrome, options: selenium_options
+  private_class_method :new
+  attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time, :session
+
+  def initialize(start_date, start_time, return_date, return_time)
+    @start_date = start_date
+    @start_time = start_time
+    @return_date = return_date
+    @return_time = return_time
+    @selenium_options = set_selenium_options
+    @session = Selenium::WebDriver.for :chrome, options: selenium_options
     # 10秒待っても読み込まれない場合は例外起こす
     session.manage.timeouts.implicit_wait = 10
+  end
 
-    url = get_url
+  def search
     session.navigate.to(url)
+    # JavaScriptのレンダリングが完了してから次の処理に移りたいので3秒待つ
     sleep(3)
-    car_lists = session.find_elements(:class, 'plan_info_block')
+    car_contents = session.find_elements(:class, 'plan_info_block')
+
     search_results = []
-    car_lists.each do |car_info|
-      contents = pluck_contents(car_info)
+    car_contents.each { |content| search_results << extract_contents(content) }
 
-      search_results << contents
-    end
+    return ServiceResult.new success: true, data: { is_no_result: true } unless search_results.present?
 
-    if search_results.empty?
-      data = {
-        is_no_result: true
-      }
-    else
-      # formatted_prices be like ["¥30,000(税込)","¥50,600(税込)"]
-      formatted_prices = search_results.map{|res| res[:price]}
-      prices = remove_format(formatted_prices)
+    # formatted_prices be like ["¥30,000(税込)","¥50,600(税込)"]
+    formatted_prices = search_results.map { |res| res[:price] }
+    prices = remove_format(formatted_prices)
+    average_price = average_price(prices)
+    cheapest_price = cheapest_price(prices)
+    highest_price = highest_price(prices)
+    average_price_between_average_and_cheapest = average_price([average_price, cheapest_price])
 
-      average_price = average_price(prices)
-      cheapest_price = cheapest_price(prices)
-      highest_price = highest_price(prices)
-      average_price_between_average_and_cheapest =
-        average_price([average_price, cheapest_price])
+    data = {
+      car_list: search_results,
+      average_price: average_price,
+      cheapest_price: cheapest_price,
+      highest_price: highest_price,
+      average_price_between_average_and_cheapest: average_price_between_average_and_cheapest,
+      is_error: false
+    }
 
-      data = {
-        car_list: search_results,
-        average_price: average_price,
-        cheapest_price: cheapest_price,
-        highest_price: highest_price,
-        average_price_between_average_and_cheapest:
-          average_price_between_average_and_cheapest,
-        is_error: false
-      }
-    end
-
-    session.quit if session
     ServiceResult.new success: true, data: data
   rescue => e
-    session.quit if session
-    Utility.log_exception e,
+    output_error(
+      e,
       info: "Called CarPriceSearcher.call with\n" \
-        "- start_date: #{start_date}, - start_time: #{start_time} " \
-        "- return_date: #{return_date}, - return_time: #{return_time}\n" \
-        "- selenium_options: #{selenium_options.options}"
+            "- start_date: #{start_date}, - start_time: #{start_time} " \
+            "- return_date: #{return_date}, - return_time: #{return_time}\n" \
+            "- selenium_options: #{selenium_options.options}"
+    )
     ServiceResult.new success: false, errors: e
+  ensure
+    session.quit if session
   end
 
   private
-  attr_reader :selenium_options, :start_date, :start_time, :return_date, :return_time
 
   def set_selenium_options
     # Webdrivers::Chromedriver.required_version = '106.0.5249.21' if Rails.env.development?
@@ -84,13 +84,12 @@ class CarPriceSearcher
     options.add_argument('--disable-dev-shm-usage')
     # リモートデバッグフラグを立てる
     options.add_argument('--remote-debugging-port=9222')
-
     options
   end
 
-  def get_url
-    start_datetime = Time.parse("#{start_date} #{start_time}")
-    return_datetime = Time.parse("#{return_date} #{return_time}")
+  def url
+    start_datetime = Time.zone.parse("#{start_date} #{start_time}")
+    return_datetime = Time.zone.parse("#{return_date} #{return_time}")
     # ?time=9-00だとエラーになるため、?time=09-00になるように加工する
     start_hour = start_datetime.hour.to_s.length == 1 ? "0#{start_datetime.hour}" : start_datetime.hour
     return_hour = return_datetime.hour.to_s.length == 1 ? "0#{return_datetime.hour}" : return_datetime.hour
@@ -120,12 +119,14 @@ class CarPriceSearcher
       "&car_type[1]=5"
   end
 
-  def pluck_contents car_info
-    shop_name = car_info.find_element(:class, 'plan_info_block_shop_name').text
-    car_name = car_info.find_element(:class, 'plan_contents_name_wrap').text
-    limit_of_passengers = car_info.find_elements(:class, 'plan_car_spec')[1].text
-    price_title = car_info.find_element(:class, 'plan_contents_price_title').text
-    price = car_info.find_element(:class, 'plan_contents_price').text
+  # スクレイピングで取得したHTMLから価格などの情報を抽出する
+  # @params <Selenium::WebDriver::Element> car_content
+  def extract_contents(car_content)
+    shop_name = car_content.find_element(:class, 'plan_info_block_shop_name').text
+    car_name = car_content.find_element(:class, 'plan_contents_name_wrap').text
+    limit_of_passengers = car_content.find_elements(:class, 'plan_car_spec')[1].text
+    price_title = car_content.find_element(:class, 'plan_contents_price_title').text
+    price = car_content.find_element(:class, 'plan_contents_price').text
 
     {
       shop_name: shop_name,
@@ -136,15 +137,13 @@ class CarPriceSearcher
     }
   end
 
+  # @param Array<String> formatted_prices (e.g. ["¥30,000(税込)","¥50,600(税込)"])
   def remove_format formatted_prices
     # ["¥30,000(税込)","¥50,600(税込)"]
     # ↓ to be
     # [30000, 50600]
-    unformatted_prices = []
-    formatted_prices.each do |formatted_price|
-      unformatted_prices << formatted_price.delete("^0-9").to_i
+    formatted_prices.map do |formatted_price|
+      formatted_price.delete("^0-9").to_i
     end
-
-    unformatted_prices
   end
 end

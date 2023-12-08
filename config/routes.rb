@@ -1,4 +1,3 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-  get 'search', to: 'search_prices#search'
+  resources :search_prices, only: [:index]
 end
