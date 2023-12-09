@@ -1,0 +1,126 @@
+require: rubocop-rails
+
+AllCops:
+  TargetRubyVersion: 3.0.3
+  Exclude:
+    - "db/**/*.rb"
+    - "bin/**/*.rb"
+    - "spec/**/*.rb"
+    - "vendor/bundle/**/*.rb"
+
+# 日本語でのコメントを許可
+AsciiComments:
+  Enabled: false
+
+# クラスの行数制限をしない
+ClassLength:
+  Enabled: false
+
+# メソッド内の循環的複雑度(=[:if, :while, :until, :for, :rescue, :when, :and, :or]の使用回数)
+CyclomaticComplexity:
+  Max: 10
+
+# クラスにコメントを残さない
+Documentation:
+  Enabled: false
+
+# メソッドの行数
+Metrics/LineLength:
+  Max: 160
+  Exclude:
+    - "db/migrate/*.rb"
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*.rb"
+
+Metrics/MethodLength:
+  Max: 20
+  Exclude:
+    - "db/migrate/*.rb"
+
+# メソッド内のABC(Assignment Branch Condition)サイズのチェックをしない
+Metrics/AbcSize:
+  Enabled: false
+
+Naming/VariableNumber:
+  EnforcedStyle: snake_case
+
+Layout/HashAlignment:
+  Enabled: false
+
+# protected もしくは private はインデントを下げる
+Layout/IndentationConsistency:
+  Enabled: true
+  EnforcedStyle: indented_internal_methods
+
+Layout/FirstArrayElementIndentation:
+  Enabled: true
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  Enabled: true
+  EnforcedStyle: consistent
+
+Layout/ExtraSpacing:
+  Enabled: true
+  AllowBeforeTrailingComments: true
+
+# 1行の長さ
+LineLength:
+  Enabled: false
+
+# アンダースコアから始まる変数を許可する
+Lint/UnderscorePrefixedVariableName:
+  Enabled: false
+
+# モジュール名::クラス名の定義を許可しない
+Style/ClassAndModuleChildren:
+  EnforcedStyle: nested
+
+# !! のイディオムを許可する
+Style/DoubleNegation:
+  Enabled: false
+
+# 文字列の変更を許可(ruby 3.0 ではデフォルトで文字列が immutable になるらしい)
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/Lambda:
+  Enabled: false
+
+Style/NegatedIf:
+  Enabled: false
+
+# is, has, have等から始まるメソッドの使用を禁止にしない
+Style/PredicateName:
+  Enabled: false
+
+# selfがあったほうがわかりやすい場合もあるので許可する
+Style/RedundantSelf:
+  Enabled: false
+
+Style/RescueStandardError:
+  Enabled: false
+
+# raise Exception.new(msg)形式を有効とする
+RaiseArgs:
+  EnforcedStyle: compact
+
+# belongs_toでrequiredを使うようにしているので、optionalの使用を必須にしない
+Rails/BelongsTo:
+  Enabled: false
+
+Rails/SkipsModelValidations:
+  Enabled: false
+
+# Modelでforeign_keyを省略できる場合も省略を推奨しない
+Rails/RedundantForeignKey:
+  Enabled: false
+
+# uniqueness validationにindexを必須としない
+Rails/UniqueValidationWithoutIndex:
+  Enabled: false
+
+Rails/Blank:
+  Enabled: false

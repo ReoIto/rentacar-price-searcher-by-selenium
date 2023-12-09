@@ -24,6 +24,7 @@ class CarPriceSearcher < ::Base
     @session = Selenium::WebDriver.for :chrome, options: selenium_options
     # 10秒待っても読み込まれない場合は例外起こす
     session.manage.timeouts.implicit_wait = 10
+    super
   end
 
   def search
@@ -31,7 +32,6 @@ class CarPriceSearcher < ::Base
     # JavaScriptのレンダリングが完了してから次の処理に移りたいので3秒待つ
     sleep(3)
     car_contents = session.find_elements(:class, 'plan_info_block')
-
     search_results = []
     car_contents.each { |content| search_results << extract_contents(content) }
 
@@ -65,85 +65,85 @@ class CarPriceSearcher < ::Base
     )
     ServiceResult.new success: false, errors: e
   ensure
-    session.quit if session
+    session&.quit
   end
 
   private
 
-  def set_selenium_options
-    # Webdrivers::Chromedriver.required_version = '106.0.5249.21' if Rails.env.development?
-    options = Selenium::WebDriver::Chrome::Options.new
-    options.binary = ENV.fetch("GOOGLE_CHROME_SHIM") if Rails.env.production?
-    # コマンドラインからchromeを開く。GUIよりこっちの方が軽い
-    options.add_argument('--headless')
-    # 「暫定的なフラグ」らしい
-    options.add_argument('--disable-gpu')
-    # セキュリティ対策などのchromeに搭載してある保護機能をオフにする
-    options.add_argument('--no-sandbox')
-    # ディスクのメモリスペースを使う
-    options.add_argument('--disable-dev-shm-usage')
-    # リモートデバッグフラグを立てる
-    options.add_argument('--remote-debugging-port=9222')
-    options
-  end
-
-  def url
-    start_datetime = Time.zone.parse("#{start_date} #{start_time}")
-    return_datetime = Time.zone.parse("#{return_date} #{return_time}")
-    # ?time=9-00だとエラーになるため、?time=09-00になるように加工する
-    start_hour = start_datetime.hour.to_s.length == 1 ? "0#{start_datetime.hour}" : start_datetime.hour
-    return_hour = return_datetime.hour.to_s.length == 1 ? "0#{return_datetime.hour}" : return_datetime.hour
-    start_min = start_datetime.min.zero? ? '00' : start_datetime.min
-    return_min = return_datetime.min.zero? ? '00' : return_datetime.min
-
-    "https://skyticket.jp/rentacar/okinawa/naha_airport/" \
-      "?time=#{start_hour}-#{start_min}" \
-      "&prefecture=47" \
-      "&area_id=271" \
-      "&airport_id=326" \
-      "&station_id=9200" \
-      "&return_time=#{return_hour}-#{return_min}" \
-      "&return_prefecture=0" \
-      "&return_airport_id=0" \
-      "&checkbox=1" \
-      "&place=3" \
-      "&return_way=0" \
-      "&year=#{start_datetime.year}" \
-      "&month=#{start_datetime.month}" \
-      "&day=#{start_datetime.day}" \
-      "&return_year=#{return_datetime.year}" \
-      "&return_month=#{return_datetime.month}" \
-      "&return_day=#{return_datetime.day}" \
-      "&area_type=0" \
-      "&car_type[0]=9" \
-      "&car_type[1]=5"
-  end
-
-  # スクレイピングで取得したHTMLから価格などの情報を抽出する
-  # @params <Selenium::WebDriver::Element> car_content
-  def extract_contents(car_content)
-    shop_name = car_content.find_element(:class, 'plan_info_block_shop_name').text
-    car_name = car_content.find_element(:class, 'plan_contents_name_wrap').text
-    limit_of_passengers = car_content.find_elements(:class, 'plan_car_spec')[1].text
-    price_title = car_content.find_element(:class, 'plan_contents_price_title').text
-    price = car_content.find_element(:class, 'plan_contents_price').text
-
-    {
-      shop_name: shop_name,
-      car_name: car_name,
-      limit_of_passengers: limit_of_passengers,
-      price_title: price_title,
-      price: price
-    }
-  end
-
-  # @param Array<String> formatted_prices (e.g. ["¥30,000(税込)","¥50,600(税込)"])
-  def remove_format formatted_prices
-    # ["¥30,000(税込)","¥50,600(税込)"]
-    # ↓ to be
-    # [30000, 50600]
-    formatted_prices.map do |formatted_price|
-      formatted_price.delete("^0-9").to_i
+    def set_selenium_options
+      # Webdrivers::Chromedriver.required_version = '106.0.5249.21' if Rails.env.development?
+      options = Selenium::WebDriver::Chrome::Options.new
+      options.binary = ENV.fetch("GOOGLE_CHROME_SHIM") if Rails.env.production?
+      # コマンドラインからchromeを開く。GUIよりこっちの方が軽い
+      options.add_argument('--headless')
+      # 「暫定的なフラグ」らしい
+      options.add_argument('--disable-gpu')
+      # セキュリティ対策などのchromeに搭載してある保護機能をオフにする
+      options.add_argument('--no-sandbox')
+      # ディスクのメモリスペースを使う
+      options.add_argument('--disable-dev-shm-usage')
+      # リモートデバッグフラグを立てる
+      options.add_argument('--remote-debugging-port=9222')
+      options
     end
-  end
+
+    def url
+      start_datetime = Time.zone.parse("#{start_date} #{start_time}")
+      return_datetime = Time.zone.parse("#{return_date} #{return_time}")
+      # ?time=9-00だとエラーになるため、?time=09-00になるように加工する
+      start_hour = start_datetime.hour.to_s.length == 1 ? "0#{start_datetime.hour}" : start_datetime.hour
+      return_hour = return_datetime.hour.to_s.length == 1 ? "0#{return_datetime.hour}" : return_datetime.hour
+      start_min = start_datetime.min.zero? ? '00' : start_datetime.min
+      return_min = return_datetime.min.zero? ? '00' : return_datetime.min
+
+      'https://skyticket.jp/rentacar/okinawa/naha_airport/' \
+        "?time=#{start_hour}-#{start_min}" \
+        "&prefecture=47" \
+        "&area_id=271" \
+        "&airport_id=326" \
+        "&station_id=9200" \
+        "&return_time=#{return_hour}-#{return_min}" \
+        "&return_prefecture=0" \
+        "&return_airport_id=0" \
+        "&checkbox=1" \
+        "&place=3" \
+        "&return_way=0" \
+        "&year=#{start_datetime.year}" \
+        "&month=#{start_datetime.month}" \
+        "&day=#{start_datetime.day}" \
+        "&return_year=#{return_datetime.year}" \
+        "&return_month=#{return_datetime.month}" \
+        "&return_day=#{return_datetime.day}" \
+        "&area_type=0" \
+        "&car_type[0]=9" \
+        "&car_type[1]=5"
+    end
+
+    # スクレイピングで取得したHTMLから価格などの情報を抽出する
+    # @params <Selenium::WebDriver::Element> car_content
+    def extract_contents(car_content)
+      shop_name = car_content.find_element(:class, 'plan_info_block_shop_name').text
+      car_name = car_content.find_element(:class, 'plan_contents_name_wrap').text
+      limit_of_passengers = car_content.find_elements(:class, 'plan_car_spec')[1].text
+      price_title = car_content.find_element(:class, 'plan_contents_price_title').text
+      price = car_content.find_element(:class, 'plan_contents_price').text
+
+      {
+        shop_name: shop_name,
+        car_name: car_name,
+        limit_of_passengers: limit_of_passengers,
+        price_title: price_title,
+        price: price
+      }
+    end
+
+    # @param Array<String> formatted_prices (e.g. ["¥30,000(税込)","¥50,600(税込)"])
+    def remove_format(formatted_prices)
+      # ["¥30,000(税込)","¥50,600(税込)"]
+      # ↓ to be
+      # [30000, 50600]
+      formatted_prices.map do |formatted_price|
+        formatted_price.delete('^0-9').to_i
+      end
+    end
 end
